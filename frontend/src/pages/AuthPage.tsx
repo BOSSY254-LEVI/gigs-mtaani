@@ -113,7 +113,7 @@ export function AuthPage() {
         <p className="auth-subtitle">Secure hyperlocal gigs for comrades</p>
 
         <button className="demo-badge" onClick={handleDemoLogin} type="button">
-          Try Demo Mode
+          Welcome to Gigs Mtaani! 
         </button>
 
         <div className="auth-tabs">
