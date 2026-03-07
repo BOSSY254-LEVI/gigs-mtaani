@@ -1,6 +1,7 @@
-import { useMemo, type ReactNode, useEffect } from "react";
+import { useMemo, type ReactNode } from "react";
+import { BriefcaseBusiness, LogOut, Palette } from "lucide-react";
 import { useAuthStore } from "../state/authStore";
-import { useThemeStore, initializeTheme } from "../state/themeStore";
+import { THEME_OPTIONS, type ThemeName, useThemeStore } from "../state/themeStore";
 
 type LayoutProps = {
   children: ReactNode;
@@ -9,18 +10,12 @@ type LayoutProps = {
 
 export function AppLayout({ children, title = "Gigs Mtaani" }: LayoutProps) {
   const { user, clearSession } = useAuthStore();
-  const { theme, toggleTheme } = useThemeStore();
+  const { theme, setTheme } = useThemeStore();
 
-  useEffect(() => {
-    initializeTheme();
-  }, []);
+  const displayName = useMemo(() => {
+    return user?.profile?.displayName || user?.displayName || "Comrade";
+  }, [user?.displayName, user?.profile?.displayName]);
 
-  const statusPill = useMemo(() => {
-    const band = user?.trustScore?.band ?? "C";
-    return `Trust ${band}`;
-  }, [user?.trustScore?.band]);
-
-  const displayName = user?.profile?.displayName || user?.displayName || "Comrade";
   const campusId = user?.profile?.campusId || user?.campusId || "Campus";
 
   return (
@@ -28,41 +23,47 @@ export function AppLayout({ children, title = "Gigs Mtaani" }: LayoutProps) {
       <header className="dashboard-header">
         <nav className="dashboard-nav">
           <div className="nav-brand">
-            <div className="nav-brand-icon">💼</div>
-            <span className="nav-brand-text">Gigs Mtaani</span>
-          </div>
-          <div className="nav-actions">
-            <div className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
-              <svg className="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="5" fill="currentColor"/>
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12H4M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <svg className="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
-              </svg>
+            <div className="nav-brand-icon">
+              <BriefcaseBusiness size={18} />
             </div>
-            <div className="nav-user">
-              <div className="nav-avatar">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex flex-col items-start">
-                <span className="text-white font-medium">{displayName}</span>
-                <span className="text-muted text-sm">{campusId}</span>
-              </div>
-              <button 
-                className="btn btn-secondary btn-sm" 
-                onClick={clearSession}
+            <div className="nav-brand-copy">
+              <span className="nav-brand-text">Gigs Mtaani</span>
+              <small className="text-muted">{title}</small>
+            </div>
+          </div>
+
+          <div className="nav-actions">
+            <label className="layout-theme-control">
+              <Palette size={14} />
+              <select
+                value={theme}
+                onChange={(event) => setTheme(event.target.value as ThemeName)}
+                aria-label="Select dashboard theme"
               >
+                {THEME_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="nav-user">
+              <div className="nav-avatar">{displayName.charAt(0).toUpperCase()}</div>
+              <div className="user-info">
+                <span className="user-name">{displayName}</span>
+                <span className="user-role">{campusId}</span>
+              </div>
+              <button className="btn btn-secondary btn-sm" onClick={clearSession}>
+                <LogOut size={14} />
                 Logout
               </button>
             </div>
           </div>
         </nav>
       </header>
-      
-      <main className="dashboard-content">
-        {children}
-      </main>
+
+      <main className="dashboard-content">{children}</main>
     </div>
   );
 }

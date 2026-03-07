@@ -19,11 +19,21 @@ export type ChatMessage = {
   createdAt: string;
 };
 
+export type SelectedThread = {
+  id: string;
+  gigId: string;
+  gigTitle: string;
+  posterName: string;
+  isOnline: boolean;
+};
+
 type ChatState = {
   activeThreadId: string | null;
+  selectedThread: SelectedThread | null;
   messagesByThread: Record<string, ChatEnvelope[]>;
   messages: ChatMessage[];
   setActiveThread: (threadId: string | null) => void;
+  setSelectedThread: (thread: SelectedThread | null) => void;
   setMessages: (threadId: string, messages: ChatEnvelope[]) => void;
   appendMessage: (threadId: string, message: ChatEnvelope) => void;
   sendMessage: (threadId: string, content: string) => void;
@@ -32,9 +42,11 @@ type ChatState = {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   activeThreadId: null,
+  selectedThread: null,
   messagesByThread: {},
   messages: [],
   setActiveThread: (threadId) => set({ activeThreadId: threadId }),
+  setSelectedThread: (thread) => set({ selectedThread: thread }),
   setMessages: (threadId, messages) =>
     set((state) => ({
       ...state,

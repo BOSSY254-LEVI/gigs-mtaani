@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../state/chatStore";
 
 interface ChatInterfaceProps {
-  gigId: string;
+  gigId?: string;
   gigTitle: string;
   posterName: string;
   posterAvatar?: string;
+  isOnline?: boolean;
   onSendMessage: (message: string) => void;
   onGetDirections?: (gigId: string) => void;
-  onClose: () => void;
+  onQuickAction?: (action: string) => void;
+  onClose?: () => void;
 }
 
 export function ChatInterface({ 
@@ -16,8 +18,10 @@ export function ChatInterface({
   gigTitle, 
   posterName, 
   posterAvatar, 
+  isOnline = true,
   onSendMessage, 
   onGetDirections, 
+  onQuickAction,
   onClose 
 }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
@@ -72,7 +76,9 @@ export function ChatInterface({
           <div className="user-details">
             <h4>{posterName}</h4>
             <p className="gig-title">{gigTitle}</p>
-            <span className="status-indicator online">Online</span>
+            <span className={`status-indicator ${isOnline ? 'online' : 'offline'}`}>
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
           </div>
         </div>
         <div className="chat-actions">
