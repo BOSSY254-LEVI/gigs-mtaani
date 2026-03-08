@@ -17,25 +17,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
-      - name: Install
+      - name: Install Backend
+        working-directory: backend
         run: npm install
 
-      - name: Generate Prisma Client
-        run: npm --workspace @gigs/api run prisma:generate
-
-      - name: Build Shared
-        run: npm --workspace @gigs/shared run build
-
       - name: Build API
-        run: npm --workspace @gigs/api run build
-
-      - name: Build Web
-        run: npm --workspace @gigs/web run build
+        working-directory: backend
+        run: npm run build
 
       - name: Run API Tests
-        run: npm --workspace @gigs/api run test
+        working-directory: backend
+        run: npm run test
+
+      - name: Install Web
+        working-directory: frontend
+        run: npm install
+
+      - name: Build Web
+        working-directory: frontend
+        run: npm run build
 
   docker:
     if: github.ref == 'refs/heads/main'
@@ -58,15 +59,15 @@ jobs:
       - name: Build and Push API
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: services/api/Dockerfile
+          context: backend
+          file: backend/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/gigs-mtaani-api:latest
 
       - name: Build and Push Web
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: apps/web/Dockerfile
+          context: frontend
+          file: frontend/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/gigs-mtaani-web:latest
