@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { 
-  BriefcaseBusiness, 
-  Users, 
-  Shield, 
-  Heart, 
-  Globe, 
+import {
+  BriefcaseBusiness,
+  Users,
+  Shield,
+  Heart,
+  Globe,
   Award,
   ChevronRight,
   MessageCircle,
@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   ArrowRight
 } from "lucide-react";
-import { useThemeStore } from "../state/themeStore";
+import { Footer } from "./Footer";
+import { Navigation } from "../components/Navigation";
 
 // Icons as components for reusability
 const IconWrapper = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -23,7 +24,6 @@ const IconWrapper = ({ children, className = "" }: { children: React.ReactNode; 
 );
 
 export function AboutPage() {
-  const { theme } = useThemeStore();
   const [contactForm, setContactForm] = useState({
     name: "",
     email: "",
@@ -110,22 +110,7 @@ export function AboutPage() {
   return (
     <div className="landing-page">
       {/* Navigation Header */}
-      <header className="landing-header">
-        <div className="landing-header-content">
-          <Link to="/" className="landing-brand">
-            <div className="landing-brand-icon">
-              <BriefcaseBusiness size={24} />
-            </div>
-            <span className="landing-brand-text">Gigs Mtaani</span>
-          </Link>
-          <nav className="landing-nav">
-            <Link to="/" className="landing-nav-link">Home</Link>
-            <Link to="/about" className="landing-nav-link active">About</Link>
-            <Link to="/contact" className="landing-nav-link">Contact</Link>
-            <Link to="/auth" className="landing-nav-cta">Get Started</Link>
-          </nav>
-        </div>
-      </header>
+      <Navigation />
 
       {/* Hero Section */}
       <section className="about-hero">
@@ -303,54 +288,7 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="landing-footer">
-        <div className="landing-footer-container">
-          <div className="landing-footer-grid">
-            <div className="landing-footer-brand">
-              <Link to="/" className="landing-brand">
-                <div className="landing-brand-icon">
-                  <BriefcaseBusiness size={20} />
-                </div>
-                <span className="landing-brand-text">Gigs Mtaani</span>
-              </Link>
-              <p>Connecting talent with opportunity. Your trusted platform for flexible work.</p>
-            </div>
-            <div className="landing-footer-links">
-              <h4>Platform</h4>
-              <Link to="/">Home</Link>
-              <Link to="/about">About Us</Link>
-              <Link to="/contact">Contact</Link>
-              <Link to="/auth">Get Started</Link>
-            </div>
-            <div className="landing-footer-links">
-              <h4>Support</h4>
-              <a href="#">Help Center</a>
-              <a href="#">Safety</a>
-              <a href="#">Terms</a>
-              <a href="#">Privacy</a>
-            </div>
-            <div className="landing-footer-contact">
-              <h4>Contact Us</h4>
-              <div className="landing-footer-contact-item">
-                <Mail size={16} />
-                <span>hello@gigsmtaani.com</span>
-              </div>
-              <div className="landing-footer-contact-item">
-                <Phone size={16} />
-                <span>+254 700 000 000</span>
-              </div>
-              <div className="landing-footer-contact-item">
-                <MapPin size={16} />
-                <span>Nairobi, Kenya</span>
-              </div>
-            </div>
-          </div>
-          <div className="landing-footer-bottom">
-            <p>&copy; 2024 Gigs Mtaani. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       <style>{`
         .landing-page {
@@ -894,98 +832,6 @@ export function AboutPage() {
         .about-cta-buttons .btn-secondary:hover {
           background: rgba(255, 255, 255, 0.1);
           border-color: white;
-        }
-
-        /* Footer */
-        .landing-footer {
-          background: var(--bg-secondary);
-          border-top: 1px solid var(--bg-tertiary);
-          padding: 4rem 1.5rem 2rem;
-        }
-
-        .landing-footer-container {
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .landing-footer-grid {
-          display: grid;
-          grid-template-columns: 2fr 1fr 1fr 1.5fr;
-          gap: 3rem;
-        }
-
-        @media (max-width: 900px) {
-          .landing-footer-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (max-width: 600px) {
-          .landing-footer-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .landing-footer-brand p {
-          margin-top: 1rem;
-          color: var(--text-secondary);
-          font-size: 0.95rem;
-          line-height: 1.6;
-        }
-
-        .landing-footer-links {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .landing-footer-links h4 {
-          font-size: 1rem;
-          color: var(--text-primary);
-          margin-bottom: 0.5rem;
-        }
-
-        .landing-footer-links a {
-          color: var(--text-secondary);
-          text-decoration: none;
-          font-size: 0.9rem;
-          transition: color 0.2s;
-        }
-
-        .landing-footer-links a:hover {
-          color: var(--primary-500);
-        }
-
-        .landing-footer-contact h4 {
-          font-size: 1rem;
-          color: var(--text-primary);
-          margin-bottom: 1rem;
-        }
-
-        .landing-footer-contact-item {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          color: var(--text-secondary);
-          font-size: 0.9rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .landing-footer-contact-item svg {
-          color: var(--primary-500);
-        }
-
-        .landing-footer-bottom {
-          margin-top: 3rem;
-          padding-top: 1.5rem;
-          border-top: 1px solid var(--bg-tertiary);
-          text-align: center;
-        }
-
-        .landing-footer-bottom p {
-          color: var(--text-tertiary);
-          font-size: 0.875rem;
-          margin: 0;
         }
 
         /* Responsive */
