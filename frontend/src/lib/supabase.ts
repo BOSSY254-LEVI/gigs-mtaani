@@ -16,8 +16,8 @@ export interface GigsUser {
 // Create browser client for client-side usage
 export function createClient() {
   return createBrowserClient(
-    import.meta.env.VITE_SUPABASE_URL || "https://your-project.supabase.co",
-    import.meta.env.VITE_SUPABASE_ANON_KEY || "your-anon-key"
+    import.meta.env.VITE_SUPABASE_URL || "https://ubfkehylomrqxejgahjk.supabase.co",
+    import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZmtlaHlsb21ycXhlamdhaGprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5ODI0NzIsImV4cCI6MjA4ODU1ODQ3Mn0.PK5Kp0wug96Vr-quCTFL9kdDb8SjEhdI6wjmICKYbj0"
   );
 }
 
