@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { HomeIcon } from "lucide-react";
 import { HomePage } from "./pages/HomePage";
@@ -21,6 +21,27 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
 export default function App() {
   const { accessToken } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Small delay to ensure auth state is loaded
+    const timer = setTimeout(() => setIsLoading(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        fontFamily: 'system-ui, sans-serif'
+      }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <Routes>

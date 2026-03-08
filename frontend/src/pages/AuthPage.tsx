@@ -1,68 +1,32 @@
-﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowRight,
-  BadgeCheck,
-  Eye,
-  EyeOff,
-  KeyRound,
-  LoaderCircle,
-  Lock,
-  Mail,
-  Phone,
-  ShieldCheck,
-  Sparkles,
-  UserRound
-} from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+﻿import { useEffect, useState, useMemo, FormEvent, ReactNode } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Eye, EyeOff, LoaderCircle, Sparkles, ShieldCheck, KeyRound, Mail, Lock, Phone, BadgeCheck, UserRound, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "../state/authStore";
+import { useThemeStore, ThemeName, THEME_OPTIONS } from "../state/themeStore";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { authApi } from "../lib/api";
-import { useAuthStore } from "../state/authStore";
-import { THEME_OPTIONS, type ThemeName, useThemeStore } from "../state/themeStore";
+import { getPasswordChecks, getErrorMessage } from "../lib/utils";
+import { emailPattern, phonePattern } from "../lib/patterns";
 
 type AuthMode = "login" | "register" | "verify" | "forgot" | "reset";
 
-type PasswordRule = {
-  label: string;
-  test: (value: string) => boolean;
-};
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phonePattern = /^\+?[1-9]\d{8,14}$/;
-
-const passwordRules: PasswordRule[] = [
-  { label: "At least 12 characters", test: (value) => value.length >= 12 },
-  { label: "Uppercase and lowercase letters", test: (value) => /[A-Z]/.test(value) && /[a-z]/.test(value) },
-  { label: "At least one number", test: (value) => /\d/.test(value) },
-  { label: "At least one special character", test: (value) => /[^A-Za-z0-9]/.test(value) }
-];
-
-function getPasswordChecks(value: string) {
-  return passwordRules.map((rule) => ({ label: rule.label, pass: rule.test(value) }));
+interface AuthState {
+  mode: AuthMode;
+  verifyToken: string;
+  resetToken: string;
 }
 
-function getErrorMessage(error: unknown, fallback: string) {
-  const data = (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
-  return data?.error ?? data?.message ?? fallback;
-}
-
-function parseAuthState(search: string) {
+function parseAuthState(search: string): AuthState {
   const params = new URLSearchParams(search);
   const mode = params.get("mode");
   const token = params.get("token")?.trim() ?? "";
-  if (mode === "verify" && token) return { mode: "verify" as AuthMode, verifyToken: token, resetToken: "" };
-  if (mode === "reset" && token) return { mode: "reset" as AuthMode, verifyToken: "", resetToken: token };
-  return { mode: "login" as AuthMode, verifyToken: "", resetToken: "" };
+  if (mode === "verify" && token) return { mode: "verify", verifyToken: token, resetToken: "" };
+  if (mode === "reset" && token) return { mode: "reset", verifyToken: "", resetToken: token };
+  return { mode: "login", verifyToken: "", resetToken: "" };
 }
 
 function PasswordChecklist({ value }: { value: string }) {
@@ -104,15 +68,7 @@ function Field({ label, htmlFor, children }: { label: string; htmlFor: string; c
   );
 }
 
-function TextInput({
-  id,
-  icon,
-  children
-}: {
-  id: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
+function TextInput({ id, icon, children }: { id: string; icon: ReactNode; children: ReactNode }) {
   return (
     <div className="pro-auth-input-wrap" id={`${id}-wrap`}>
       {icon}
@@ -124,7 +80,7 @@ function TextInput({
 export function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { accessToken, setSession } = useAuthStore();
+  const { setSession } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
 
   const parsed = useMemo(() => parseAuthState(location.search), [location.search]);
@@ -152,8 +108,9 @@ export function AuthPage() {
   const [resetForm, setResetForm] = useState({ token: parsed.resetToken, password: "", confirmPassword: "" });
 
   useEffect(() => {
+    const { accessToken } = useAuthStore.getState();
     if (accessToken) navigate("/app", { replace: true });
-  }, [accessToken, navigate]);
+  }, [navigate]);
 
   function switchMode(nextMode: AuthMode, options?: { preserveFeedback?: boolean }) {
     setMode(nextMode);

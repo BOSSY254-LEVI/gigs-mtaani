@@ -3,7 +3,10 @@ import { getAuthSnapshot, useAuthStore, type SessionUser } from "../state/authSt
 
 const baseURL =
   import.meta.env.VITE_API_URL ??
-  (import.meta.env.DEV ? "http://localhost:4000/api/v1" : `${window.location.origin}/api/v1`);
+  (import.meta.env.DEV
+    ? "http://localhost:4000/api/v1"
+    : "https://your-backend-url.vercel.app/api/v1" // Replace with your actual backend URL
+  );
 
 const api = axios.create({
   baseURL,
