@@ -181,7 +181,7 @@ export function HomePage() {
               <div className="hero-card-header">
                 <div className="hero-card-avatar">JD</div>
                 <div>
-                  <h4>John Doe</h4>
+                  <h4>Slim Shady</h4>
                   <span>Verified Worker ⭐ 4.9</span>
                 </div>
               </div>

@@ -3,7 +3,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { HomeIcon } from "lucide-react";
 import { HomePage } from "./pages/HomePage";
 import { AboutPage } from "./pages/AboutPage";
-import {ContactPage} from "./pages/ContactPage"
+import { ContactPage } from "./pages/ContactPage";
+import { AddGigPage } from "./pages/AddGigPage";
 import { AuthPage } from "./pages/AuthPage";
 import { ChatPage } from "./pages/ChatPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -32,6 +33,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/add-gig"
+        element={
+          <ProtectedRoute>
+            <AddGigPage />
           </ProtectedRoute>
         }
       />
