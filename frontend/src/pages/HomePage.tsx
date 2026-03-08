@@ -375,7 +375,7 @@ export function HomePage() {
               <h4>Contact Us</h4>
               <div className="landing-footer-contact-item">
                 <span>📧</span>
-                <span>hello@gigsmtaani.com</span>
+                <span>gigsmtaani@gmail.com</span>
               </div>
               <div className="landing-footer-contact-item">
                 <span>📱</span>
@@ -383,12 +383,12 @@ export function HomePage() {
               </div>
               <div className="landing-footer-contact-item">
                 <span>📍</span>
-                <span>Nairobi, Kenya</span>
+                <span>Homabay, Kenya</span>
               </div>
             </div>
           </div>
           <div className="landing-footer-bottom">
-            <p>&copy; 2024 Gigs Mtaani. All rights reserved.</p>
+            <p>&copy; 2026 Gigs Mtaani. All rights reserved.</p>
           </div>
         </div>
       </footer>
