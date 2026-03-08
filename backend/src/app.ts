@@ -33,21 +33,21 @@ import {
   verifyWebhookSignature
 } from "./lib/security.js";
 import {
-  findUserById as findUserByIdSupabase,
-  findUserByIdentifier as findUserByIdentifierSupabase,
-  isSupabaseEnabled,
+  getUserById as findUserByIdSupabase,
+  getUserByEmail as findUserByIdentifierSupabase,
+  isSupabaseConfigured as isSupabaseEnabled,
   logActivity,
   pingSupabase,
   type PersistedUser,
-  upsertUser
-} from "./lib/supabase.js";
+  createUser as upsertUser
+} from "./lib/supabase-db.js";
 import {
   sendConfirmationEmail,
   sendPasswordResetEmail,
   sendWelcomeEmail
 } from "./lib/email.js";
 
-type UserRole = "STUDENT" | "ADMIN";
+type UserRole = "STUDENT" | "ADMIN" | "MODERATOR" | "RISK_OPS" | "FINANCE_OPS";
 type UserStatus = "ACTIVE" | "PENDING_VERIFICATION" | "SUSPENDED" | "DELETED";
 type UserRecord = {
   id: string;
@@ -190,6 +190,9 @@ const toPersistedUser = (u: UserRecord): PersistedUser => ({
   failed_login_attempts: u.failedLoginAttempts,
   lockout_until: u.lockoutUntilMs ? new Date(u.lockoutUntilMs).toISOString() : null,
   email_verified_at: u.emailVerifiedAt,
+  email_verification_token: null,
+  password_reset_token: null,
+  password_reset_expires: null,
   created_at: u.createdAt,
   updated_at: u.updatedAt
 });
@@ -586,7 +589,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.get("/health", async () => ({ status: "ok", ts: new Date().toISOString(), env: config.NODE_ENV, uptimeSeconds: Math.round(process.uptime()) }));
   app.get("/ready", async () => {
     const db = await pingSupabase();
-    return { status: db.ok ? "ready" : "degraded", db };
+    return { status: db ? "ready" : "degraded", db };
   });
   app.get("/api/v1/auth/csrf", async (_request, reply) => ({ csrfToken: createCsrfToken(reply) }));
 

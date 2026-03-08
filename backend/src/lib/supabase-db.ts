@@ -1,6 +1,26 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { config } from "../config.js";
 
+export type PersistedUser = {
+  id: string;
+  campus_email: string;
+  phone_e164: string;
+  password_hash: string;
+  role: "STUDENT" | "ADMIN" | "MODERATOR" | "RISK_OPS" | "FINANCE_OPS";
+  status: "ACTIVE" | "PENDING_VERIFICATION" | "SUSPENDED" | "DELETED";
+  display_name: string;
+  campus_id: string;
+  mfa_enabled: boolean;
+  failed_login_attempts: number;
+  lockout_until: string | null;
+  email_verified_at: string | null;
+  email_verification_token: string | null;
+  password_reset_token: string | null;
+  password_reset_expires: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -429,6 +449,43 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(config.SUPABASE_URL && config.SUPABASE_SERVICE_KEY);
 }
 
+export async function pingSupabase(): Promise<boolean> {
+  const client = getSupabase();
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from("app_users").select("id").limit(1);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function logActivity(activity: {
+  userId?: string | null;
+  action: string;
+  metadata?: Record<string, unknown>;
+  requestId?: string | null;
+  ipHash?: string | null;
+  userAgent?: string | null;
+}): Promise<void> {
+  const client = getSupabase();
+  if (!client) return;
+
+  try {
+    await client.from("activity_logs").insert({
+      user_id: activity.userId,
+      action: activity.action,
+      metadata: activity.metadata || {},
+      request_id: activity.requestId,
+      ip_hash: activity.ipHash,
+      user_agent: activity.userAgent,
+    });
+  } catch (error) {
+    console.error("Failed to log activity:", error);
+  }
+}
+
 // ============================================
 // USER OPERATIONS
 // ============================================
@@ -440,8 +497,8 @@ export async function createUser(userData: {
   password_hash: string;
   display_name: string;
   campus_id: string;
-  role?: "STUDENT" | "ADMIN";
-  status?: "ACTIVE" | "PENDING_VERIFICATION";
+  role?: "STUDENT" | "ADMIN" | "MODERATOR" | "RISK_OPS" | "FINANCE_OPS";
+  status?: "ACTIVE" | "PENDING_VERIFICATION" | "SUSPENDED" | "DELETED";
 }): Promise<boolean> {
   const client = getSupabase();
   if (!client) return false;
@@ -1035,35 +1092,6 @@ export async function triggerSOS(sessionId: string, note?: string) {
     .eq("id", sessionId);
 
   return !error;
-}
-
-// ============================================
-// ACTIVITY LOGGING
-// ============================================
-
-export async function logActivity(activity: {
-  user_id?: string;
-  action: string;
-  metadata?: Record<string, unknown>;
-  ip_hash?: string;
-  user_agent?: string;
-  request_id?: string;
-}) {
-  const client = getSupabase();
-  if (!client) return;
-
-  const { error } = await client.from("activity_logs").insert({
-    user_id: activity.user_id || null,
-    action: activity.action,
-    metadata: activity.metadata || {},
-    ip_hash: activity.ip_hash || null,
-    user_agent: activity.user_agent || null,
-    request_id: activity.request_id || null,
-  });
-
-  if (error) {
-    console.error("Failed to log activity:", error);
-  }
 }
 
 // ============================================

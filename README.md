@@ -148,6 +148,84 @@ cd backend && npm start
 - `GET /safety/sessions/active` - Get active safety sessions
 - `POST /safety/sessions/:id/sos` - Send SOS alert
 
+## 🚀 Deployment
+
+### Backend Deployment (Vercel)
+
+1. **Deploy Backend First**:
+   ```bash
+   cd backend
+   vercel --prod
+   ```
+   Note the deployment URL (e.g., `https://your-backend.vercel.app`)
+
+2. **Configure Environment Variables** in Vercel dashboard or using CLI:
+   ```bash
+   vercel env add SUPABASE_URL
+   vercel env add SUPABASE_SERVICE_KEY
+   vercel env add JWT_ACCESS_SECRET
+   vercel env add JWT_REFRESH_SECRET
+   # ... add other required environment variables
+   ```
+
+### Frontend Deployment (Vercel)
+
+1. **Update Environment Variables**:
+   ```bash
+   cd frontend
+   cp .env.example .env
+   # Edit .env with your actual values, especially VITE_API_URL
+   ```
+
+2. **Deploy Frontend**:
+   ```bash
+   vercel --prod
+   ```
+
+3. **Configure Environment Variables** in Vercel dashboard:
+   - `VITE_API_URL`: Your backend deployment URL + `/api/v1`
+   - `VITE_SUPABASE_URL`: Your Supabase project URL
+   - `VITE_SUPABASE_ANON_KEY`: Your Supabase anon key
+
+### Environment Variables Reference
+
+**Backend (.env)**:
+```env
+NODE_ENV=production
+PORT=4000
+WEB_ORIGIN=https://your-frontend.vercel.app
+JWT_ACCESS_SECRET=your-secure-access-secret
+JWT_REFRESH_SECRET=your-secure-refresh-secret
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your-supabase-service-key
+# ... other variables
+```
+
+**Frontend (.env)**:
+```env
+VITE_API_URL=https://your-backend.vercel.app/api/v1
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_DEMO_MODE=false
+```
+
+## 🔧 Troubleshooting
+
+### Blank Page After Account Creation
+
+If you see a blank page after creating an account in production:
+
+1. **Check API URL**: Ensure `VITE_API_URL` in your frontend environment variables points to your deployed backend
+2. **Verify Backend Deployment**: Make sure your backend is deployed and accessible
+3. **Check Console Errors**: Open browser dev tools to see if there are JavaScript errors
+4. **Demo Mode**: If backend is not ready, set `VITE_DEMO_MODE=true` to show fallback data
+
+### Common Issues
+
+- **API Connection Failed**: Check that your backend URL is correct and the backend is deployed
+- **Supabase Connection**: Verify your Supabase URL and keys are correct
+- **Environment Variables**: Ensure all required environment variables are set in Vercel dashboard
+
 ## 🎨 UI Components
 
 The frontend features a modern, responsive design with:
