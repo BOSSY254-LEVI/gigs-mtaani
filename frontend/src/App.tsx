@@ -1,5 +1,9 @@
 import { type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { HomeIcon } from "lucide-react";
+import { HomePage } from "./pages/HomePage";
+import { AboutPage } from "./pages/AboutPage";
+import {ContactPage} from "./pages/ContactPage"
 import { AuthPage } from "./pages/AuthPage";
 import { ChatPage } from "./pages/ChatPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -19,6 +23,9 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/contact" element={<ContactPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route
         path="/app"
@@ -36,7 +43,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to={accessToken ? "/app" : "/auth"} replace />} />
+      <Route path="*" element={<Navigate to={accessToken ? "/app" : "/"} replace />} />
     </Routes>
   );
 }
