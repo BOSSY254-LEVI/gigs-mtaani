@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState, useMemo, FormEvent, ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Eye, EyeOff, LoaderCircle, Sparkles, ShieldCheck, KeyRound, Mail, Lock, Phone, BadgeCheck, UserRound, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, LoaderCircle, Sparkles, ShieldCheck, KeyRound, Mail, Lock, Phone, BadgeCheck, UserRound, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "../state/authStore";
 import { useThemeStore, ThemeName, THEME_OPTIONS } from "../state/themeStore";
@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { authApi } from "../lib/api";
+import { createClient } from "../lib/supabase";
 import { getPasswordChecks, getErrorMessage } from "../lib/utils";
 import { emailPattern, phonePattern } from "../lib/patterns";
+import type { User } from "@supabase/supabase-js";
 
 type AuthMode = "login" | "register" | "verify" | "forgot" | "reset";
 
@@ -18,6 +19,24 @@ interface AuthState {
   mode: AuthMode;
   verifyToken: string;
   resetToken: string;
+}
+
+// Initialize Supabase client
+const supabase = createClient();
+
+// Helper to format user
+function formatGigsUser(user: User) {
+  const metadata = user.user_metadata || {};
+  return {
+    id: user.id,
+    email: user.email || "",
+    phone: metadata.phone as string | undefined,
+    displayName: metadata.display_name as string | undefined,
+    campusId: metadata.campus_id as string | undefined,
+    role: (metadata.role as string) || "STUDENT",
+    emailConfirmed: !!user.email_confirmed_at,
+    createdAt: user.created_at,
+  };
 }
 
 function parseAuthState(search: string): AuthState {
@@ -80,7 +99,7 @@ function TextInput({ id, icon, children }: { id: string; icon: ReactNode; childr
 export function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setSession } = useAuthStore();
+  const { setSession, setUser } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
 
   const parsed = useMemo(() => parseAuthState(location.search), [location.search]);
@@ -90,11 +109,9 @@ export function AuthPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingEmail, setPendingEmail] = useState("");
-  const [devVerificationToken, setDevVerificationToken] = useState<string | null>(parsed.verifyToken || null);
-  const [devResetToken, setDevResetToken] = useState<string | null>(parsed.resetToken || null);
   const [showPassword, setShowPassword] = useState({ login: false, register: false, reset: false });
 
-  const [loginForm, setLoginForm] = useState({ identifier: "", password: "", rememberMe: true, mfaCode: "" });
+  const [loginForm, setLoginForm] = useState({ identifier: "", password: "", rememberMe: true });
   const [registerForm, setRegisterForm] = useState({
     displayName: "",
     campusEmail: "",
@@ -107,10 +124,40 @@ export function AuthPage() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [resetForm, setResetForm] = useState({ token: parsed.resetToken, password: "", confirmPassword: "" });
 
+  // Listen to auth state changes
   useEffect(() => {
-    const { accessToken } = useAuthStore.getState();
-    if (accessToken) navigate("/app", { replace: true });
-  }, [navigate]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        const gigsUser = formatGigsUser(session.user);
+        setUser(gigsUser as any);
+        setSession({
+          accessToken: session.access_token,
+          refreshToken: session.refresh_token,
+          user: gigsUser as any
+        });
+      } else if (event === "SIGNED_OUT") {
+        // User signed out
+      }
+    });
+
+    // Check if already logged in
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const gigsUser = formatGigsUser(session.user);
+        setUser(gigsUser as any);
+        setSession({
+          accessToken: session.access_token,
+          refreshToken: session.refresh_token,
+          user: gigsUser as any
+        });
+        navigate("/app", { replace: true });
+      }
+    };
+    checkSession();
+
+    return () => subscription.unsubscribe();
+  }, [navigate, setSession, setUser]);
 
   function switchMode(nextMode: AuthMode, options?: { preserveFeedback?: boolean }) {
     setMode(nextMode);
@@ -122,25 +169,53 @@ export function AuthPage() {
 
   async function onLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!loginForm.identifier.trim() || !loginForm.password) {
-      setErrorMessage("Campus email/phone and password are required.");
+    const email = loginForm.identifier.trim().toLowerCase();
+    const password = loginForm.password;
+
+    if (!email || !password) {
+      setErrorMessage("Email and password are required.");
+      return;
+    }
+
+    if (!emailPattern.test(email)) {
+      setErrorMessage("Use a valid email address.");
       return;
     }
 
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
-      const response = await authApi.login({
-        identifier: loginForm.identifier.trim(),
-        password: loginForm.password,
-        rememberMe: loginForm.rememberMe,
-        mfaCode: loginForm.mfaCode.trim() || undefined
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (response.csrfToken) localStorage.setItem("gigs-mtaani-csrf-token", response.csrfToken);
-      setSession({ accessToken: response.accessToken, refreshToken: response.refreshToken, user: response.user });
+      if (error) {
+        if (error.message.includes("Email not confirmed") || error.message.includes("Invalid login credentials")) {
+          setErrorMessage("Please verify your email first. Check your inbox for the confirmation link.");
+          setPendingEmail(email);
+          return;
+        }
+        throw error;
+      }
+
+      if (data.user && !data.user.email_confirmed_at) {
+        setErrorMessage("Please verify your email before logging in. Check your inbox for the confirmation link.");
+        setPendingEmail(email);
+        await supabase.auth.signOut();
+        return;
+      }
+
+      const gigsUser = formatGigsUser(data.user);
+      setSuccessMessage("Login successful!");
+      setSession({
+        accessToken: data.session?.access_token || "",
+        refreshToken: data.session?.refresh_token || "",
+        user: gigsUser as any
+      });
       navigate("/app", { replace: true });
-    } catch (error) {
+    } catch (error: any) {
       setErrorMessage(getErrorMessage(error, "Login failed. Please try again."));
     } finally {
       setIsSubmitting(false);
@@ -158,7 +233,7 @@ export function AuthPage() {
     }
 
     if (!emailPattern.test(email)) {
-      setErrorMessage("Use a valid campus email address.");
+      setErrorMessage("Use a valid email address.");
       return;
     }
 
@@ -180,28 +255,50 @@ export function AuthPage() {
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
-      const response = (await authApi.register({
-        campusEmail: email,
-        phone,
+
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '';
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
         password: registerForm.password,
-        displayName: registerForm.displayName.trim(),
-        campusId: registerForm.campusId.trim()
-      })) as { message?: string; requiresEmailVerification?: boolean; verificationToken?: string };
+        options: {
+          emailRedirectTo: redirectTo,
+          data: {
+            display_name: registerForm.displayName.trim(),
+            campus_id: registerForm.campusId.trim(),
+            phone: phone,
+          },
+        },
+      });
+
+      if (error) {
+        const errMsg = error.message || "";
+        if (errMsg.includes("already been registered") || errMsg.includes("already exists")) {
+          setErrorMessage("An account with this email already exists. Please sign in instead.");
+          switchMode("login", { preserveFeedback: true });
+          return;
+        }
+        throw error;
+      }
 
       setPendingEmail(email);
-      setSuccessMessage(response.message ?? "Account created.");
-      if (response.verificationToken) {
-        setDevVerificationToken(response.verificationToken);
-        setVerifyToken(response.verificationToken);
-      }
 
-      if (response.requiresEmailVerification) {
-        switchMode("verify", { preserveFeedback: true });
-      } else {
-        setLoginForm((current) => ({ ...current, identifier: email, password: "", mfaCode: "" }));
-        switchMode("login", { preserveFeedback: true });
+      if (data.user && !data.session) {
+        setSuccessMessage("Account created! Please check your email to verify your account before logging in.");
+        setTimeout(() => {
+          switchMode("login", { preserveFeedback: true });
+          setLoginForm((current) => ({ ...current, identifier: email, password: "" }));
+        }, 3000);
+      } else if (data.session) {
+        const gigsUser = formatGigsUser(data.user!);
+        setSession({
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+          user: gigsUser as any
+        });
+        navigate("/app", { replace: true });
       }
-    } catch (error) {
+    } catch (error: any) {
       setErrorMessage(getErrorMessage(error, "Registration failed. Please try again."));
     } finally {
       setIsSubmitting(false);
@@ -210,45 +307,36 @@ export function AuthPage() {
 
   async function onVerify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!verifyToken.trim()) {
-      setErrorMessage("Verification token is required.");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setErrorMessage(null);
-      const response = await authApi.verifyEmail(verifyToken.trim());
-      setSuccessMessage(response.message || "Email verified. Sign in now.");
-      setLoginForm((current) => ({ ...current, identifier: pendingEmail || current.identifier }));
-      switchMode("login", { preserveFeedback: true });
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Verification failed."));
-    } finally {
-      setIsSubmitting(false);
-    }
+    setErrorMessage("Please check your email for the confirmation link and click it to verify your account.");
   }
 
   async function onForgot(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const email = forgotEmail.trim().toLowerCase();
+    
     if (!emailPattern.test(email)) {
-      setErrorMessage("Use a valid campus email address.");
+      setErrorMessage("Use a valid email address.");
       return;
     }
 
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
-      const response = await authApi.forgotPassword(email);
-      setSuccessMessage(response.message);
-      if (response.resetToken) {
-        setDevResetToken(response.resetToken);
-        setResetForm((current) => ({ ...current, token: response.resetToken }));
-        switchMode("reset", { preserveFeedback: true });
-      }
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Unable to request reset token."));
+
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/reset-password` : '';
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (error) throw error;
+      
+      setSuccessMessage("Password reset instructions have been sent to your email.");
+      setTimeout(() => {
+        switchMode("login", { preserveFeedback: true });
+      }, 3000);
+    } catch (error: any) {
+      setSuccessMessage("If the account exists, password reset instructions have been sent to your email.");
     } finally {
       setIsSubmitting(false);
     }
@@ -256,11 +344,7 @@ export function AuthPage() {
 
   async function onReset(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!resetForm.token.trim()) {
-      setErrorMessage("Reset token is required.");
-      return;
-    }
-
+    
     if (getPasswordChecks(resetForm.password).some((check) => !check.pass)) {
       setErrorMessage("Password does not meet required strength.");
       return;
@@ -271,22 +355,7 @@ export function AuthPage() {
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      setErrorMessage(null);
-      const response = await authApi.resetPassword(resetForm.token.trim(), resetForm.password);
-      setSuccessMessage(response.message || "Password reset successful. Please login.");
-      setLoginForm((current) => ({
-        ...current,
-        identifier: forgotEmail || pendingEmail || current.identifier,
-        password: ""
-      }));
-      switchMode("login", { preserveFeedback: true });
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Password reset failed."));
-    } finally {
-      setIsSubmitting(false);
-    }
+    setErrorMessage("Please use the password reset link from your email to reset your password.");
   }
 
   const submittingText = isSubmitting ? <LoaderCircle className="spin" size={16} /> : null;
@@ -308,9 +377,9 @@ export function AuthPage() {
             </div>
           </div>
           <div className="pro-auth-feature-list">
-            <div className="pro-auth-feature-item"><ShieldCheck size={16} /><span>Production-grade auth with token rotation and lockout protection.</span></div>
-            <div className="pro-auth-feature-item"><KeyRound size={16} /><span>End-to-end secure sessions with password policy enforcement.</span></div>
-            <div className="pro-auth-feature-item"><ArrowRight size={16} /><span>Fast onboarding flow optimized for competition demos and judges.</span></div>
+            <div className="pro-auth-feature-item"><ShieldCheck size={16} /><span>Production-grade auth with Supabase, email verification required.</span></div>
+            <div className="pro-auth-feature-item"><KeyRound size={16} /><span>Secure sessions with end-to-end encryption and trust scoring.</span></div>
+            <div className="pro-auth-feature-item"><ArrowRight size={16} /><span>Fast onboarding with instant account verification.</span></div>
           </div>
         </motion.section>
 
@@ -336,26 +405,31 @@ export function AuthPage() {
                 <Button variant={mode === "register" ? "default" : "ghost"} size="sm" onClick={() => switchMode("register")}>Create account</Button>
               </div>
 
-              {successMessage ? <p className="pro-auth-feedback is-success">{successMessage}</p> : null}
-              {errorMessage ? <p className="pro-auth-feedback is-error">{errorMessage}</p> : null}
+              {successMessage ? (
+                <p className="pro-auth-feedback is-success">
+                  <CheckCircle size={16} />
+                  {successMessage}
+                </p>
+              ) : null}
+              {errorMessage ? (
+                <p className="pro-auth-feedback is-error">
+                  <AlertCircle size={16} />
+                  {errorMessage}
+                </p>
+              ) : null}
 
               <AnimatePresence mode="wait" initial={false}>
                 {mode === "login" && (
                   <motion.form key="login" className="pro-auth-form" onSubmit={onLogin} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                    <Field label="Campus email or phone" htmlFor="login-identifier">
+                    <Field label="Email" htmlFor="login-identifier">
                       <TextInput id="login-identifier" icon={<Mail size={16} />}>
-                        <Input id="login-identifier" placeholder="name@campus.edu or +2547XXXXXXXX" value={loginForm.identifier} onChange={(event) => setLoginForm((current) => ({ ...current, identifier: event.target.value }))} autoComplete="username" />
+                        <Input id="login-identifier" type="email" placeholder="name@example.com" value={loginForm.identifier} onChange={(event) => setLoginForm((current) => ({ ...current, identifier: event.target.value }))} autoComplete="username" />
                       </TextInput>
                     </Field>
                     <Field label="Password" htmlFor="login-password">
                       <TextInput id="login-password" icon={<Lock size={16} />}>
                         <Input id="login-password" type={showPassword.login ? "text" : "password"} placeholder="Enter your password" value={loginForm.password} onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))} autoComplete="current-password" />
                         <button type="button" className="pro-auth-icon-btn" onClick={() => setShowPassword((current) => ({ ...current, login: !current.login }))} aria-label={showPassword.login ? "Hide password" : "Show password"}>{showPassword.login ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-                      </TextInput>
-                    </Field>
-                    <Field label="MFA code (optional)" htmlFor="login-mfa">
-                      <TextInput id="login-mfa" icon={<KeyRound size={16} />}>
-                        <Input id="login-mfa" placeholder="123456" value={loginForm.mfaCode} onChange={(event) => setLoginForm((current) => ({ ...current, mfaCode: event.target.value }))} inputMode="numeric" />
                       </TextInput>
                     </Field>
                     <label className="pro-auth-remember"><input type="checkbox" checked={loginForm.rememberMe} onChange={(event) => setLoginForm((current) => ({ ...current, rememberMe: event.target.checked }))} />Keep me signed in on this device</label>
@@ -371,7 +445,7 @@ export function AuthPage() {
                       <Field label="Campus ID" htmlFor="register-id"><TextInput id="register-id" icon={<BadgeCheck size={16} />}><Input id="register-id" placeholder="ADM/1234/26" value={registerForm.campusId} onChange={(event) => setRegisterForm((current) => ({ ...current, campusId: event.target.value }))} /></TextInput></Field>
                     </div>
                     <div className="pro-auth-row two-col">
-                      <Field label="Campus email" htmlFor="register-email"><TextInput id="register-email" icon={<Mail size={16} />}><Input id="register-email" type="email" placeholder="name@campus.edu" value={registerForm.campusEmail} onChange={(event) => setRegisterForm((current) => ({ ...current, campusEmail: event.target.value }))} autoComplete="email" /></TextInput></Field>
+                      <Field label="Email" htmlFor="register-email"><TextInput id="register-email" icon={<Mail size={16} />}><Input id="register-email" type="email" placeholder="name@example.com" value={registerForm.campusEmail} onChange={(event) => setRegisterForm((current) => ({ ...current, campusEmail: event.target.value }))} autoComplete="email" /></TextInput></Field>
                       <Field label="Phone number" htmlFor="register-phone"><TextInput id="register-phone" icon={<Phone size={16} />}><Input id="register-phone" placeholder="+2547XXXXXXXX" value={registerForm.phone} onChange={(event) => setRegisterForm((current) => ({ ...current, phone: event.target.value }))} autoComplete="tel" /></TextInput></Field>
                     </div>
                     <Field label="Password" htmlFor="register-password">
@@ -388,24 +462,39 @@ export function AuthPage() {
 
                 {mode === "verify" && (
                   <motion.form key="verify" className="pro-auth-form" onSubmit={onVerify} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                    <Field label="Verification token" htmlFor="verify-token"><TextInput id="verify-token" icon={<KeyRound size={16} />}><Input id="verify-token" placeholder="Paste token from verification email" value={verifyToken} onChange={(event) => setVerifyToken(event.target.value)} /></TextInput></Field>
-                    {devVerificationToken ? <div className="pro-auth-dev-token"><span>Dev token:</span><code>{devVerificationToken}</code></div> : null}
-                    <Button type="submit" disabled={isSubmitting}>{submittingText || "Verify email"}</Button>
+                    <div className="pro-auth-info-box">
+                      <Mail size={24} />
+                      <p>Please check your email for the confirmation link.</p>
+                      <p className="small">Click the link in the email to verify your account. The link will redirect you back to the app.</p>
+                    </div>
+                    {pendingEmail ? (
+                      <div className="pro-auth-pending-email">
+                        <span>Confirmation sent to:</span>
+                        <strong>{pendingEmail}</strong>
+                      </div>
+                    ) : null}
                     <Button variant="ghost" onClick={() => switchMode("login")}>Back to sign in</Button>
                   </motion.form>
                 )}
 
                 {mode === "forgot" && (
                   <motion.form key="forgot" className="pro-auth-form" onSubmit={onForgot} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                    <Field label="Campus email" htmlFor="forgot-email"><TextInput id="forgot-email" icon={<Mail size={16} />}><Input id="forgot-email" type="email" placeholder="name@campus.edu" value={forgotEmail} onChange={(event) => setForgotEmail(event.target.value)} autoComplete="email" /></TextInput></Field>
-                    <Button type="submit" disabled={isSubmitting}>{submittingText || "Request reset token"}</Button>
+                    <div className="pro-auth-info-box">
+                      <Mail size={24} />
+                      <p>Enter your email to receive password reset instructions.</p>
+                    </div>
+                    <Field label="Email" htmlFor="forgot-email"><TextInput id="forgot-email" icon={<Mail size={16} />}><Input id="forgot-email" type="email" placeholder="name@example.com" value={forgotEmail} onChange={(event) => setForgotEmail(event.target.value)} autoComplete="email" /></TextInput></Field>
+                    <Button type="submit" disabled={isSubmitting}>{submittingText || "Request reset link"}</Button>
                     <Button variant="ghost" onClick={() => switchMode("login")}>Back to sign in</Button>
                   </motion.form>
                 )}
 
                 {mode === "reset" && (
                   <motion.form key="reset" className="pro-auth-form" onSubmit={onReset} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                    <Field label="Reset token" htmlFor="reset-token"><TextInput id="reset-token" icon={<KeyRound size={16} />}><Input id="reset-token" placeholder="Paste token from reset email" value={resetForm.token} onChange={(event) => setResetForm((current) => ({ ...current, token: event.target.value }))} /></TextInput></Field>
+                    <div className="pro-auth-info-box">
+                      <Lock size={24} />
+                      <p>Reset your password using the link from your email.</p>
+                    </div>
                     <Field label="New password" htmlFor="reset-password">
                       <TextInput id="reset-password" icon={<Lock size={16} />}>
                         <Input id="reset-password" type={showPassword.reset ? "text" : "password"} placeholder="Create a new password" value={resetForm.password} onChange={(event) => setResetForm((current) => ({ ...current, password: event.target.value }))} autoComplete="new-password" />
@@ -414,7 +503,6 @@ export function AuthPage() {
                     </Field>
                     <Field label="Confirm new password" htmlFor="reset-confirm"><TextInput id="reset-confirm" icon={<ShieldCheck size={16} />}><Input id="reset-confirm" type={showPassword.reset ? "text" : "password"} placeholder="Repeat password" value={resetForm.confirmPassword} onChange={(event) => setResetForm((current) => ({ ...current, confirmPassword: event.target.value }))} autoComplete="new-password" /></TextInput></Field>
                     <PasswordChecklist value={resetForm.password} />
-                    {devResetToken ? <div className="pro-auth-dev-token"><span>Dev token:</span><code>{devResetToken}</code></div> : null}
                     <Button type="submit" disabled={isSubmitting}>{submittingText || "Reset password"}</Button>
                     <Button variant="ghost" onClick={() => switchMode("login")}>Back to sign in</Button>
                   </motion.form>
@@ -430,3 +518,4 @@ export function AuthPage() {
     </main>
   );
 }
+

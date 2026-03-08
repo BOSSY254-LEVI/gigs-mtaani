@@ -28,6 +28,7 @@ export type SessionUser = {
   campusId?: string;
   profile?: Profile;
   trustScore?: TrustScore;
+  emailConfirmed?: boolean;
 };
 
 type AuthState = {
@@ -35,6 +36,7 @@ type AuthState = {
   refreshToken: string | null;
   user: SessionUser | null;
   setSession: (payload: { accessToken: string; refreshToken: string; user: SessionUser }) => void;
+  setUser: (user: SessionUser | null) => void;
   updateAccessToken: (accessToken: string) => void;
   clearSession: () => void;
 };
@@ -48,6 +50,7 @@ export const useAuthStore = create<AuthState>()(
       setSession: ({ accessToken, refreshToken, user }) => {
         set({ accessToken, refreshToken, user });
       },
+      setUser: (user) => set({ user }),
       updateAccessToken: (accessToken) => set((state) => ({ ...state, accessToken })),
       clearSession: () => set({ accessToken: null, refreshToken: null, user: null })
     }),
