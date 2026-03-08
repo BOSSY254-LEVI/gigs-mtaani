@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
-import { HomeIcon } from "lucide-react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { AboutPage } from "./pages/AboutPage";
 import { ContactPage } from "./pages/ContactPage";
@@ -9,7 +8,11 @@ import { AuthPage } from "./pages/AuthPage";
 import { ChatPage } from "./pages/ChatPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { useAuthStore } from "./state/authStore";
+import { Preloader } from "./components/Preloader";
 import "./styles-premium.css";
+
+const AUTH_PATH = "/auth";
+const PRELOADER_DURATION = 1500;
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { accessToken } = useAuthStore();
@@ -19,61 +22,61 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-export default function App() {
+function AppRoutes() {
   const { accessToken } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
+  const [showPreloader, setShowPreloader] = useState(
+    () => location.pathname !== AUTH_PATH
+  );
 
   useEffect(() => {
-    // Small delay to ensure auth state is loaded
-    const timer = setTimeout(() => setIsLoading(false), 100);
+    if (location.pathname === AUTH_PATH) {
+      setShowPreloader(false);
+      return;
+    }
+    setShowPreloader(true);
+    const timer = setTimeout(() => setShowPreloader(false), PRELOADER_DURATION);
     return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui, sans-serif'
-      }}>
-        <div>Loading...</div>
-      </div>
-    );
-  }
+  }, [location.pathname]);
 
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/auth" element={<AuthPage />} />
-      <Route
-        path="/app"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/add-gig"
-        element={
-          <ProtectedRoute>
-            <AddGigPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/chat"
-        element={
-          <ProtectedRoute>
-            <ChatPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to={accessToken ? "/app" : "/"} replace />} />
-    </Routes>
+    <>
+      <Preloader visible={showPreloader} />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/add-gig"
+          element={
+            <ProtectedRoute>
+              <AddGigPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to={accessToken ? "/app" : "/"} replace />} />
+      </Routes>
+    </>
   );
+}
+
+export default function App() {
+  return <AppRoutes />;
 }
