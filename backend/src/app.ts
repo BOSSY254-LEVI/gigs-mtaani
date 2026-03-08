@@ -541,7 +541,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(cookie);
   await app.register(compress, { global: true, threshold: 1024 });
   await app.register(cors, {
-    origin: true, // Allow all origins in development
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Authorization", "Content-Type", "X-Device-Id", "X-Device-Public-Key", "X-CSRF-Token", "X-API-Key", "X-Webhook-Signature"],
     credentials: true
