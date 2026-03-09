@@ -3273,3 +3273,85 @@ h6 { font-size: 1rem; font-weight: 500; }
     opacity: 0;
   }
 }
+
+/* ==============================================
+   DOTS LOADER (Auth Pages)
+   ================================================ */
+
+.dots-loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: dots-loader-fade-in 0.3s ease-out forwards;
+}
+
+.dots-loader-overlay.dots-loader-fade-out {
+  animation: dots-loader-fade-out 0.4s ease-in forwards;
+}
+
+.dots-loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.dots-loader-dots {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+}
+
+.dots-loader-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  animation: dots-loader-scale 1s ease-in-out infinite;
+}
+
+.dots-loader-dot:nth-child(1) { animation-delay: 0s; }
+.dots-loader-dot:nth-child(2) { animation-delay: 0.15s; }
+.dots-loader-dot:nth-child(3) { animation-delay: 0.3s; }
+.dots-loader-dot:nth-child(4) { animation-delay: 0.45s; }
+
+.dots-loader-text {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+@keyframes dots-loader-scale {
+  0%, 80%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.6);
+    opacity: 1;
+  }
+}
+
+@keyframes dots-loader-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes dots-loader-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dots-loader-dot {
+    animation: none;
+    opacity: 1;
+  }
+}

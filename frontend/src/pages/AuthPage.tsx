@@ -11,6 +11,7 @@ import { Label } from "../components/ui/label";
 import { createClient } from "../lib/supabase";
 import { getPasswordChecks, getErrorMessage } from "../lib/utils";
 import { emailPattern, phonePattern } from "../lib/patterns";
+import { DotsLoader } from "../components/DotsLoader";
 import type { User } from "@supabase/supabase-js";
 
 type AuthMode = "login" | "register" | "verify" | "forgot" | "reset";
@@ -361,10 +362,12 @@ export function AuthPage() {
   const submittingText = isSubmitting ? <LoaderCircle className="spin" size={16} /> : null;
 
   return (
-    <main className="pro-auth-page">
-      <div className="pro-auth-background">
-        <motion.span className="pro-auth-orb pro-auth-orb--one" animate={{ y: [0, -26, 0], x: [0, 16, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
-        <motion.span className="pro-auth-orb pro-auth-orb--two" animate={{ y: [0, 20, 0], x: [0, -20, 0] }} transition={{ duration: 11.5, repeat: Infinity, ease: "easeInOut" }} />
+    <>
+      <DotsLoader />
+      <main className="pro-auth-page">
+        <div className="pro-auth-background">
+          <motion.span className="pro-auth-orb pro-auth-orb--one" animate={{ y: [0, -26, 0], x: [0, 16, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.span className="pro-auth-orb pro-auth-orb--two" animate={{ y: [0, 20, 0], x: [0, -20, 0] }} transition={{ duration: 11.5, repeat: Infinity, ease: "easeInOut" }} />
       </div>
 
       <div className="pro-auth-shell">
@@ -516,6 +519,7 @@ export function AuthPage() {
         </motion.section>
       </div>
     </main>
+    </>
   );
 }
 
