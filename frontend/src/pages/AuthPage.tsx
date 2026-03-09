@@ -310,12 +310,6 @@ export function AuthPage() {
   return (
     <>
       <DotsLoader />
-      <main className="pro-auth-page">
-        <div className="pro-auth-background">
-          <motion.span className="pro-auth-orb pro-auth-orb--one" animate={{ y: [0, -26, 0], x: [0, 16, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
-          <motion.span className="pro-auth-orb pro-auth-orb--two" animate={{ y: [0, 20, 0], x: [0, -20, 0] }} transition={{ duration: 11.5, repeat: Infinity, ease: "easeInOut" }} />
-      </div>
-=======
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
@@ -979,34 +973,6 @@ export function AuthPage() {
           {/* ════ RIGHT VISUAL ════ */}
           <RightPanel />
 
-                {mode === "reset" && (
-                  <motion.form key="reset" className="pro-auth-form" onSubmit={onReset} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                    <div className="pro-auth-info-box">
-                      <Lock size={24} />
-                      <p>Reset your password using the link from your email.</p>
-                    </div>
-                    <Field label="New password" htmlFor="reset-password">
-                      <TextInput id="reset-password" icon={<Lock size={16} />}>
-                        <Input id="reset-password" type={showPassword.reset ? "text" : "password"} placeholder="Create a new password" value={resetForm.password} onChange={(event) => setResetForm((current) => ({ ...current, password: event.target.value }))} autoComplete="new-password" />
-                        <button type="button" className="pro-auth-icon-btn" onClick={() => setShowPassword((current) => ({ ...current, reset: !current.reset }))} aria-label={showPassword.reset ? "Hide password" : "Show password"}>{showPassword.reset ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-                      </TextInput>
-                    </Field>
-                    <Field label="Confirm new password" htmlFor="reset-confirm"><TextInput id="reset-confirm" icon={<ShieldCheck size={16} />}><Input id="reset-confirm" type={showPassword.reset ? "text" : "password"} placeholder="Repeat password" value={resetForm.confirmPassword} onChange={(event) => setResetForm((current) => ({ ...current, confirmPassword: event.target.value }))} autoComplete="new-password" /></TextInput></Field>
-                    <PasswordChecklist value={resetForm.password} />
-                    <Button type="submit" disabled={isSubmitting}>{submittingText || "Reset password"}</Button>
-                    <Button variant="ghost" onClick={() => switchMode("login")}>Back to sign in</Button>
-                  </motion.form>
-                )}
-              </AnimatePresence>
-            </CardContent>
-            <CardFooter>
-              <p className="pro-auth-footer-text">By continuing, you agree to secure use and activity monitoring for account protection.</p>
-            </CardFooter>
-          </Card>
-        </motion.section>
-      </div>
-    </main>
-=======
         </div>
       </main>
     </>
