@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useLayoutEffect, useState, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import { AboutPage } from "./pages/AboutPage";
@@ -29,7 +29,7 @@ function AppRoutes() {
     () => location.pathname !== AUTH_PATH
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (location.pathname === AUTH_PATH) {
       setShowPreloader(false);
       return;

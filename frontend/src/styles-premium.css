@@ -3218,7 +3218,6 @@ h6 { font-size: 1rem; font-weight: 500; }
   justify-content: center;
   align-items: center;
   z-index: 9999;
-  animation: preloader-fade-in 0.3s ease-out forwards;
 }
 
 .preloader-overlay.preloader-fade-out {
@@ -3286,7 +3285,6 @@ h6 { font-size: 1rem; font-weight: 500; }
   justify-content: center;
   align-items: center;
   z-index: 9999;
-  animation: dots-loader-fade-in 0.3s ease-out forwards;
 }
 
 .dots-loader-overlay.dots-loader-fade-out {
