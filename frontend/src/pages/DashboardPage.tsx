@@ -394,13 +394,42 @@ export function DashboardPage() {
       return gigsApi.apply(gigId);
     },
     onSuccess: (result, gigId) => {
-      setStatusMessage(`Application submitted for gig ${gigId}.`);
+      // Find the gig to get poster info
+      const gig = gigs.find(g => g.id === gigId);
+      if (gig && gig.poster?.id) {
+        // Navigate to chat with the gig poster
+        const params = new URLSearchParams({
+          gigId: gig.id,
+          gigTitle: gig.title,
+          posterId: gig.poster.id,
+          posterName: gig.poster.profile?.displayName || "Gig Poster"
+        });
+        navigate(`/chat?${params.toString()}`);
+        setStatusMessage(`Application submitted! Starting conversation with ${gig.poster.profile?.displayName || 'gig poster'}...`);
+      } else {
+        setStatusMessage(`Application submitted for gig ${gigId}.`);
+      }
       queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
     onError: (error) => {
       setStatusMessage(parseApiError(error, "Could not apply for this gig right now."));
     }
   });
+
+  // Handler for messaging a gig poster
+  const handleMessagePoster = (gig: GigCardModel) => {
+    if (gig.poster?.id) {
+      const params = new URLSearchParams({
+        gigId: gig.id,
+        gigTitle: gig.title,
+        posterId: gig.poster.id,
+        posterName: gig.poster.profile?.displayName || "Gig Poster"
+      });
+      navigate(`/chat?${params.toString()}`);
+    } else {
+      setStatusMessage("Cannot message - poster information not available.");
+    }
+  };
 
   const topupMutation = useMutation({
     mutationFn: async (amount: number) => walletApi.topup(amount),
@@ -763,6 +792,7 @@ export function DashboardPage() {
                     <GigCard
                       gig={gig}
                       onApply={(gigId) => applyMutation.mutate(gigId)}
+                      onMessage={handleMessagePoster}
                     />
                   </motion.div>
                 ))}

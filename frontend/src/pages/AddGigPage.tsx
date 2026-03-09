@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { AppLayout } from "../components/Layout";
 import { useAuthStore } from "../state/authStore";
+import { gigsApi } from "../lib/api";
+import { useGeolocation } from "../hooks/useGeolocation";
 
 const CATEGORIES = [
   { value: "DELIVERY", label: "Delivery", icon: "🚗" },
@@ -32,6 +34,7 @@ const CATEGORIES = [
 export function AddGigPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { latitude, longitude } = useGeolocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -57,17 +60,38 @@ export function AddGigPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setSubmitted(true);
-    
-    // Redirect to dashboard after success
-    setTimeout(() => {
-      navigate("/app");
-    }, 2000);
+
+    try {
+      // Combine date and time into ISO string
+      const startsAt = new Date(`${formData.date}T${formData.time}`).toISOString();
+
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        payAmount: parseFloat(formData.payAmount),
+        currency: formData.currency,
+        latitude,
+        longitude,
+        radiusMeters: 5000, // Default radius
+        startsAt,
+        media: [] // No media for now
+      };
+
+      await gigsApi.create(payload);
+      
+      setSubmitted(true);
+      
+      // Redirect to dashboard after success
+      setTimeout(() => {
+        navigate("/app");
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to create gig:", error);
+      // TODO: Show error message
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const addRequirement = () => {

@@ -483,7 +483,7 @@ export function HomePage() {
   }, []);
 
   const handleWhatsAppClick = () => {
-    window.open("https://wa.me/254700000000", "_blank");
+    window.open("https://wa.me/254721373455", "_blank");
   };
 
   const handleCallClick = () => {
